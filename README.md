@@ -1,15 +1,33 @@
-# Student Score Predictor
+# 🎓 Student Score Predictor
 
-This project predicts student scores based on study hours using Linear Regression.
+A simple Machine Learning web app that predicts student scores based on study hours using Linear Regression.
 
-## Features
-- Data visualization
-- Model training
-- Prediction system
+## 🌐 Live App
+👉 https://ethin69-student-score-predictor.streamlit.app/
 
-## How to run
-1. Install dependencies:
-   pip install pandas matplotlib scikit-learn
+## 📊 Features
+- Predict scores based on study hours
+- Interactive web interface
+- Data visualization with regression line
 
-2. Run:
-   python main.py
+## 🛠 Tech Stack
+- Python
+- Streamlit
+- Pandas
+- Scikit-learn
+- Matplotlib
+
+## ▶️ Run Locally
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+
+Project structure
+student-score-predictor/
+│
+├── app.py
+├── main.py
+├── requirements.txt
+├── README.md
+├── graph.png
+└── regression_line.png
