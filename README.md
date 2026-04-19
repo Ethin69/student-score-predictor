@@ -1,3 +1,4 @@
+[![Open App](https://img.shields.io/badge/Live%20App-Click%20Here-brightgreen)](https://ethin69-student-score-predictor.streamlit.app/)
 # 🎓 Student Score Predictor
 
 A simple Machine Learning web app that predicts student scores based on study hours using Linear Regression.
