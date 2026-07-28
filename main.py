@@ -1,38 +1,37 @@
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import r2_score, mean_absolute_error
 
 # ----------------------------
-# Create dataset
+# Generate a realistic dataset
 # ----------------------------
-data = {
-    "hours": [1,2,3,4,5,6,7,8,9,10],
-    "scores": [10,20,30,40,50,60,65,70,80,95]
-}
+np.random.seed(42)
+n = 60
 
-df = pd.DataFrame(data)
+hours = np.round(np.random.uniform(1, 10, n), 1)
+attendance = np.round(np.random.uniform(50, 100, n), 1)
+noise = np.random.normal(0, 4, n)  # real-world randomness
 
-# ----------------------------
-# Visualization (save graph)
-# ----------------------------
-plt.scatter(df["hours"], df["scores"])
-plt.xlabel("Hours Studied")
-plt.ylabel("Score")
-plt.title("Study Hours vs Score")
-plt.savefig("graph.png")
-print("Graph saved as graph.png")
+scores = 5 + 6 * hours + 0.3 * attendance + noise
+scores = np.clip(scores, 0, 100).round(1)
+
+df = pd.DataFrame({
+    "hours": hours,
+    "attendance": attendance,
+    "scores": scores
+})
+df.to_csv("student_data.csv", index=False)
+print("Dataset saved as student_data.csv")
 
 # ----------------------------
 # Prepare data
 # ----------------------------
-X = df[["hours"]]
+X = df[["hours", "attendance"]]
 y = df["scores"]
 
-# ----------------------------
-# Train-test split (fixed randomness)
-# ----------------------------
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
 )
@@ -44,29 +43,46 @@ model = LinearRegression()
 model.fit(X_train, y_train)
 
 # ----------------------------
-# Predict & evaluate
+# Evaluate
 # ----------------------------
 predictions = model.predict(X_test)
-mse = mean_squared_error(y_test, predictions)
-print("Error:", mse)
+r2 = r2_score(y_test, predictions)
+mae = mean_absolute_error(y_test, predictions)
+
+print(f"R² Score: {r2:.3f}")
+print(f"Mean Absolute Error: {mae:.2f}")
+print(f"Coefficients -> hours: {model.coef_[0]:.2f}, attendance: {model.coef_[1]:.2f}")
+print(f"Intercept: {model.intercept_:.2f}")
 
 # ----------------------------
-# Plot regression line (pro touch)
+# Plot: Actual vs Predicted
 # ----------------------------
 plt.figure()
-plt.scatter(df["hours"], df["scores"])
-plt.plot(df["hours"], model.predict(X), linestyle="--")
+plt.scatter(y_test, predictions, color="teal")
+plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], "r--")
+plt.xlabel("Actual Score")
+plt.ylabel("Predicted Score")
+plt.title(f"Actual vs Predicted (R² = {r2:.2f})")
+plt.savefig("regression_line.png")
+print("Saved regression_line.png")
+
+# ----------------------------
+# Plot: Hours vs Score (visual reference)
+# ----------------------------
+plt.figure()
+plt.scatter(df["hours"], df["scores"], c=df["attendance"], cmap="viridis")
+plt.colorbar(label="Attendance %")
 plt.xlabel("Hours Studied")
 plt.ylabel("Score")
-plt.title("Study Hours vs Score (Model Fit)")
-plt.savefig("regression_line.png")
-print("Regression plot saved as regression_line.png")
+plt.title("Study Hours vs Score (colored by Attendance)")
+plt.savefig("graph.png")
+print("Saved graph.png")
 
 # ----------------------------
-# User input (no warning)
+# Manual test prediction
 # ----------------------------
 user_hours = float(input("Enter hours studied: "))
-input_df = pd.DataFrame({"hours": [user_hours]})
-
+user_attendance = float(input("Enter attendance %: "))
+input_df = pd.DataFrame({"hours": [user_hours], "attendance": [user_attendance]})
 predicted_score = model.predict(input_df)
-print("Predicted Score:", predicted_score[0])
+print(f"Predicted Score: {predicted_score[0]:.2f}")
