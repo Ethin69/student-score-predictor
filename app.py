@@ -1,56 +1,78 @@
-import streamlit as st
+import numpy as np
 import pandas as pd
+import streamlit as st
 import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score, mean_absolute_error
 
-# ----------------------------
-# Title
-# ----------------------------
+st.set_page_config(page_title="Student Score Predictor", page_icon="🎓")
+
 st.title("🎓 Student Score Predictor")
-
-st.write("Enter study hours to predict score")
-
-# ----------------------------
-# Dataset
-# ----------------------------
-data = {
-    "hours": [1,2,3,4,5,6,7,8,9,10],
-    "scores": [10,20,30,40,50,60,65,70,80,95]
-}
-
-df = pd.DataFrame(data)
+st.write("Predicts a student's score using **hours studied** and **attendance %**, powered by multi-variable Linear Regression.")
 
 # ----------------------------
-# Train Model
+# Generate & cache the dataset + model
 # ----------------------------
-X = df[["hours"]]
-y = df["scores"]
+@st.cache_resource
+def train_model():
+    np.random.seed(42)
+    n = 60
+    hours = np.round(np.random.uniform(1, 10, n), 1)
+    attendance = np.round(np.random.uniform(50, 100, n), 1)
+    noise = np.random.normal(0, 4, n)
+    scores = 5 + 6 * hours + 0.3 * attendance + noise
+    scores = np.clip(scores, 0, 100).round(1)
 
-model = LinearRegression()
-model.fit(X, y)
+    df = pd.DataFrame({"hours": hours, "attendance": attendance, "scores": scores})
+    X = df[["hours", "attendance"]]
+    y = df["scores"]
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    model = LinearRegression()
+    model.fit(X_train, y_train)
+
+    preds = model.predict(X_test)
+    r2 = r2_score(y_test, preds)
+    mae = mean_absolute_error(y_test, preds)
+
+    return model, df, r2, mae
+
+model, df, r2, mae = train_model()
 
 # ----------------------------
-# User Input
+# Model performance
 # ----------------------------
-hours = st.number_input("Enter hours studied", min_value=0.0, max_value=12.0, step=0.5)
+col1, col2 = st.columns(2)
+col1.metric("R² Score", f"{r2:.2f}")
+col2.metric("Mean Absolute Error", f"{mae:.2f} pts")
+
+st.divider()
 
 # ----------------------------
-# Prediction
+# User input
 # ----------------------------
-if st.button("Predict"):
-    input_df = pd.DataFrame({"hours": [hours]})
-    prediction = model.predict(input_df)
+st.subheader("Try a Prediction")
+c1, c2 = st.columns(2)
+hours = c1.number_input("Hours studied", min_value=0.0, max_value=12.0, step=0.5, value=5.0)
+attendance = c2.number_input("Attendance %", min_value=0.0, max_value=100.0, step=1.0, value=75.0)
 
-    st.success(f"Predicted Score: {prediction[0]:.2f}")
+if st.button("Predict Score"):
+    input_df = pd.DataFrame({"hours": [hours], "attendance": [attendance]})
+    prediction = model.predict(input_df)[0]
+    prediction = max(0, min(100, prediction))
+    st.success(f"Predicted Score: {prediction:.2f}")
+
+st.divider()
 
 # ----------------------------
-# Show Graph
+# Visualization
 # ----------------------------
+st.subheader("Data Overview")
 fig, ax = plt.subplots()
-ax.scatter(df["hours"], df["scores"])
-ax.plot(df["hours"], model.predict(X), linestyle="--")
+scatter = ax.scatter(df["hours"], df["scores"], c=df["attendance"], cmap="viridis")
+plt.colorbar(scatter, label="Attendance %")
 ax.set_xlabel("Hours Studied")
 ax.set_ylabel("Score")
-ax.set_title("Study Hours vs Score")
-
+ax.set_title("Study Hours vs Score (colored by Attendance)")
 st.pyplot(fig)
